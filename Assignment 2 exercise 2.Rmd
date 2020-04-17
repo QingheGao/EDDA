@@ -1,0 +1,86 @@
+---
+title: "Assignment2 Exercise 2"
+output: pdf_document
+---
+
+Exercise 2
+
+First, we load data from "search.txt"
+```{r setup, include=FALSE}
+search = read.table("search.txt",header = TRUE);
+attach(search)
+```
+Task a
+
+To show the randomization of the data, we use N to present the dependent variable, use I to present the treatment, and use B to present the block.
+```{r}
+N = 1; I = 3;B = 5;
+for (i in 1:B){
+  print(sample(1:(N*I)))
+}
+```
+The rows show the skill level of each student.
+
+Task 2
+
+Below is the graphic summaries of the data
+```{r}
+interaction.plot(skill,interface,time)
+```
+
+```{r}
+interaction.plot(interface,skill,time)
+```
+The lines are not parallel, which means there is interaction between interface and skill.
+
+Task 3
+
+We use a 2-way anova test to setimate the hypothesis. 
+```{r}
+search$skill = as.factor(search$skill)
+search$interface = as.factor(search$interface)
+
+searchaov = lm(time~interface + skill,data=search)
+anova(searchaov)
+```
+The P-value is 0.013, which means we can reject the null hypotheis that the mean of interfaces are the same.
+
+```{r}
+searchaov2 = lm(time~interface + skill, data = search)
+summary(searchaov2)
+```
+The time it takes a level 3 user to find a product if the website uses interface 2 is:
+    15.01+3.03+2.70 = 20.74
+    
+Task 4
+
+```{r}
+par(mfrow=c(1,2));par(pin=c(2,2))
+qqnorm(residuals(searchaov2))
+qqline(residuals(searchaov2))
+plot(fitted(searchaov2),residuals(searchaov2))
+```
+
+The qq-plot seems a bit deviated in the extremes but it could be normal and the residuals don't change systematically with the fitted values. So we can assume that the populations have equal variances. 
+
+Task 5
+
+To test whether there is an effect of interface, we use the Friedman test.
+```{r}
+friedman.test(search$time,search$interface,search$skill)
+```
+P-value is 0.04, so we reject the null hypothesis, which we can say the interface makes an effect
+
+Task 6
+```{r}
+search$interface = as.factor(search$interface)
+searchaov = lm(time~interface,data=search)
+anova(searchaov)
+```
+The P-value is 0.096 and we can not reject that the means are the same for the different interfaces.
+Then we use one-way-anova assumes that the data come from normal population and the variances are equal.
+```{r}
+qqnorm(residuals(searchaov))
+qqline(residuals(searchaov))
+```
+The population is not normal and the assumption is not met.

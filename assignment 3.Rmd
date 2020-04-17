@@ -1,0 +1,304 @@
+---
+title: "Assignment 3"
+author: " Group6: Futong Han,Qinghe Gao,Xinyu Fu"
+output: pdf_document
+highlight: tango
+---
+
+##Exercise 1
+
+We load the data from the data source and add a new column logarithm of longevity in the data frame.
+```{r}
+flies = read.table("fruitflies.txt",header=TRUE);
+fliesframe = data.frame(thorax=flies$thorax,longevity=flies$longevity,activity=flies$activity,loglongevity=log(flies$longevity))
+```
+**a)** 
+We make bloxplot and qqnorm to show the information of the data.
+```{r}
+par(mfrow=c(3,2));
+hist(fliesframe$thorax);qqnorm(fliesframe$thorax)
+hist(fliesframe$loglongevity);qqnorm(fliesframe$loglongevity)
+plot(longevity~activity, data=fliesframe)
+plot(loglongevity~thorax, data=fliesframe);abline(lm(loglongevity~thorax, data=fliesframe))
+```
+We can find that the longevity for fruitflies of the activity 'isolated' is the longest and the activity 'high' has the lowest longevity. Also we think that there is a weak linear correlation between loglongevity and thorax.Also, there is a linearity between loglongevity and thorax.
+Then we perfom an anova-test just considering the sexual activity only. And before we use it, we verify the assumption of annova:
+```{r include=FALSE}
+library(car)
+```
+
+```{r include=FALSE}
+leveneTest(loglongevity~activity,data=fliesframe)
+```
+
+```{r}
+fliesanova = lm(loglongevity~activity,data=fliesframe)
+anova(fliesanova)
+```
+We get a p-value 1.8e-07, therefore H0 is reject and we can say that sexual activity affects the longevity of the flies.
+
+```{r}
+summary(fliesanova)
+```
+According to the estimates longevity increases more when the sexual activity is isolated. 
+High activity =  3.602;Isolated =  3.602 + 0.517 = 4.119; Low activity=  3.602 + 0.397 = 3.999
+Also we can say that  high activity has the shortest longevity and sexual activity decrease longevity.
+**b)** 
+First we make an assumption that we can use two-way anova test.
+```{r echo = FALSE,results='hide'}
+leveneTest(loglongevity~activity,data=fliesframe)
+```
+Then we will make the 2-way anova test to tell the influence of sexual activity including thorax length.
+```{r echo = FALSE, results='hide'}
+fliesframe$activity = as.factor(fliesframe$activity)
+fliesframe$thorax = as.numeric(fliesframe$thorax)
+fliesanova2 = lm(loglongevity~thorax+activity, data=fliesframe)
+anova(fliesanova2)
+```
+```{r}
+summary(fliesanova2)
+```
+We obtain a p-value of 1.1e-13, therefore we can say that activity has a main effect on longevity when we consider the thorax length.
+
+Then we calculate the average thorax length is 0.82 and we calculate three conditions:
+
+
+With the values thorax9 = 0.312 (for the average thorax length) and isolated-activity = -0.275, low-activity = 0.186 and high-activity = -(-0.275+0.186) = 0.089, then we calculate the estimates for flies with average thorax in three conditions:
+
+Y~isolated = (0.82*2.98)+1.22+0.41 = 4.07
+
+Y~low = (0.82*2.98)+1.22+0.29 = 3.95
+
+Y~high = (0.82*2.98)+1.22 = 3.66
+
+**c)**
+
+In order to investigate graphically how does thorax length influence the longevity under three conditions, we separate in three different variables the data depending on the sexual activity. From the graph below we could see that longevity increase with the throax.
+```{r pressure, echo=FALSE}
+fliesframe$thorax = as.numeric(fliesframe$thorax)
+flieshigh = fliesframe[which(fliesframe$activity=="high"),]
+fliesisolated = fliesframe[which(fliesframe$activity=="isolated"),]
+flieslow = fliesframe[which(fliesframe$activity=="low"),]
+```
+
+```{r}
+par(mfrow=c(2,2));
+plot(flieshigh$thorax,flieshigh$loglongevity,main="High activity with loglongevity")
+plot(fliesisolated$thorax,fliesisolated$loglongevity,main="Isolated activity with loglongevity")
+plot(flieslow$thorax,flieslow$loglongevity,main="Low activity with loglongevity")
+```
+Also, we can see that longevity icrease with the thorax.
+```{r }
+plot(fliesframe$loglongevity~fliesframe$thorax,pch=as.character(fliesframe$activity))
+```
+We consider that thorax will influence the longevity, its dependence on activity is not so clear. Therefore we apply ANCOVA. Using 'drop' to get the p-value. According to result, p-values are less than significance 0.05. It confirms our analysis before that both activity and thorax will influence the longevity.
+
+```{r echo = FALSE}
+drop1(fliesanova2, test="F")
+contrasts(fliesframe$activity)=contr.sum
+fliesanova3 = lm(loglongevity~thorax+activity, data=fliesframe)
+summary(fliesanova3)
+```
+From the summary below we could see that p-values for 'isolated:thorax' and 'low:thorax' are bigger than significance level 0.05, therefore we do not reject there is no difference on thorax's dependence under three activities. So the dependence is similar under all three conditions of sexual activity. And also p-value for interaction is 0.15, which means that we accept the H0 there is no interaction between activity and thorax.
+```{r}
+inter = lm(loglongevity~activity*thorax,data=fliesframe)
+anova(inter)
+summary(inter)
+```
+**d)**
+We think we need to take thorax into considered because we learn that thorax will influence the longevity of fruitflies. But at the same time we think the first analysis is not wrong. We have to try the individual factor at the beginning and we don't know if thorax affect the longevity.
+
+**e)**
+In QQ plot we conclude that it has normality. And from the residuals versus we conclude that there is no sign of heteroscedasticity.
+```{r}
+par(mfrow=c(1,2));
+qqnorm(residuals(fliesanova2))
+plot(fitted(fliesanova2),residuals(fliesanova2))
+```
+**f)**
+We do the same anova test using longevity without logarithm as response variable. Even though the residual is normal distribution and variance is homogeneous. But we can see that at the summary part longevity become negative, which means we can not use original data and it is wise to use logarithm of the number of days.
+```{r }
+fliesanova4 = lm(longevity~thorax+activity, data=fliesframe)
+drop1(fliesanova4, test="F")
+contrasts(fliesframe$activity)=contr.sum
+fliesanova4 = lm(longevity~thorax+activity, data=fliesframe)
+summary(fliesanova4)
+```
+
+```{r}
+par(mfrow=c(1,2))
+qqnorm(residuals(fliesanova4));qqline(residuals(fliesanova4))
+plot(fitted(fliesanova4), residuals(fliesanova4))
+```
+
+## Exercise 2
+
+##a 
+
+To study the summary of data, we plotted the GPA distribution as a histogram. It turns out more students have a GPA between 2.0 and 3.0 than in other ranges.
+
+We also plotted the quantile-quantile distribution of the GPA data. The qqnorm figure shows the GPA is likely to have a normal distribution.
+
+To study the relation between the students who passed the exam and students who received psi instruction, we calculate the contigency table of them. 
+```{r }
+data = read.table("psi.txt",header=TRUE)
+par(mfrow=c(1,2))
+hist(data$gpa,breaks = 6,pch=1)
+qqnorm(data$gpa,pch=2)
+
+tot=xtabs(~passed+psi,data=data)
+tot
+```
+#b 
+
+To fit the data with a logistic regression model, we assume the binomial form of logistcc regression is  
+$$\log(\frac{Pr(Y=1)}{Pr(Y=0)}) = \mu + \alpha_i+\beta_i X_i$$ for $i=1,2,3...N$.
+
+We used the generlised linear model (glm) with both explanatory variables to fit the data. And we obtained the fitted logistic model as
+$$Pr(Y=1) =\Phi(-11.602 + 2.338 X_{psi} + 3.063 X_{gpa})$$ for $\Phi=1/(1+e^{-x})$
+
+We then perform the test for the H0: $\alpha_i=0$ and $\beta_i=0$ for $i=1,2,3..N$. As a result, we reject the null hypothesis with obtained $p_{psi}=0.024<0.05=\alpha$ and $p_{psi}=0.01224<0.05=\alpha$. 
+
+In conclusion, the "psi" works for the performance of students who passed the exam in our test.
+
+```{r }
+data = read.table("psi.txt",header=TRUE)
+psiglm=glm(passed~psi+gpa,data=data,family=binomial)
+summary(psiglm)
+```
+#c
+
+To estimate the probability that a student having $gpa=3$, $psi=1$ passes the assignment and a student who does not receive psi as $psi=0$, we put $\beta_{psi}=0$, $\beta_{psi}=1$ with $\beta_{gpa}=3$ respectively to fitted logistic model $$Pr(Y=1) =\Phi(-11.602 + 2.338 X_{psi} + 3.063 X_{gpa})$$ for $\Phi=1/(1+e^{-x})$ 
+
+Thus, we obtained $Pr(passed=1)=0.08230$ for a student haveing $gpa=3$, $psi=0$  and $Pr(passed=1)=0.4815$ for students a student haveing $gpa=3$, $psi=1$. 
+```{r}
+predict(psiglm,data.frame(psi=0,gpa=3),"response")
+predict(psiglm,data.frame(psi=1,gpa=3),"response")
+```
+#d
+
+To estimate the relative change in odds as $\frac{odds_{psi=1}} {odds_{psi=0}}$, we firstly rewrite the fitted model with odds being result  $$odds=\log(\frac{Pr(Y=1)}{Pr(Y=0)}) =-11.602 + 2.338 X_{psi} + 3.063 X_{gpa}$$ where $x_{psi}=1$ stands for students having "psi" instructions and $x_{psi}=0$ stands for students having NO "psi" instructions.
+
+After items arrangements and calculation, we can have the relative change of odds as $$\frac{odds_{psi=1}} {odds_{psi=0}} = \frac{e^{\beta_0+\beta_{psi}+\beta{gpa} X_{gpa}}}{e^{\beta_0++\beta{gpa} X_{gpa}}}=e^{\beta_{psi}}=10.36$$ 
+
+Thus, we conclude the relative change of odds means that adding psi to any arbitrary student can increase his/her odds to pass the exam by a factor of 10.36 rather than the standard method. 
+
+The relative change of odds does not depend on "gpa" since $$\frac{odds_{psi=1}} {odds_{psi=0}}=e^{\beta_{psi}}$$ which only depends on "psi"
+```{r}
+exp(2.338)
+```
+#d
+
+The number 15 means there are 15 out of 18 students receiving NO psi did not show improvement.
+
+The number 6 means there are 6 out of 14 students having psi but does not show improvement.
+
+We performed a Fisher exact test with H0: there is no association between improvement and psi instruction. The result shows we reject the null hypothesis with $p=0.0265<0.05$. 
+
+Thus, we conclude that there is a significant association between the improvement of students passing the exams and the psi instructions they received.
+
+```{r}
+x=matrix(c(3,15,8,6),2,2); 
+x
+fisher.test(x)
+```
+
+#f
+
+However, the experiment conducted is not correct due to the reversed positions of psi groups. Because the odds ratio is defined as the ratio of the odds of A in the presence of B and the odds of A in the absence of B. Thus, a reciprocal odds ratio is obtained. 
+
+So we performed a new test with swapped psi group, and we obtained the odds ratio as $OR= 6.22$.
+
+Therefore, we conclude that there is a positive correlation between students having psi instructions and improvements to pass the exams.
+```{r}
+
+x=matrix(c(8,6,3,15),2,2); 
+x
+fisher.test(x)
+```
+```
+
+#g
+
+The advantage of the Fisher test is that it has an exact value of P-value, but the logistic regression has an approximation of P-value.
+
+Logistic regression can fit the data having multiple factors with many levels. However, the fisher test usually calculates the p-value on a 2x2 contingency table or with a small sample of data.
+
+## Exercise 3
+
+**a)**
+First of all, we load the data from the data source and we check if there are any linear correlated factors in the model.
+```{r}
+africa_data = read.table("africa.txt", header = TRUE)
+plot(africa_data)
+round(cor(africa_data),2)
+```
+We can see that there are no linear correlations from correlation table.
+
+Then with the generalised linear regression model function we use the poisson regression with the following result:
+
+```{r}
+africa_glm = glm(miltcoup~oligarchy+pollib+parties+pctvote+popn+size+numelec+numregim, family = poisson, data = africa_data)
+summary(africa_glm)
+par(mfrow=c(2,2));
+plot(log(fitted(africa_glm)),residuals(africa_glm))
+plot(log(fitted(africa_glm)),residuals(africa_glm))
+plot(log(fitted(africa_glm)),residuals(africa_glm, type="response"))
+```
+We find that oligarchy, pollib and parties signifcantly estimate (or have a linear relation with) the amount of successful military coups. And for the response residuals even though it increases with the (logarithm) of the fitted values we see the specific structure.
+**b)**
+In the step down method we have removed the following factors in order: numelec > numregim > size > popn > pctvote. 
+
+Then the miltcoup is: 0.251 + 0.0926 * oligarchy - 0.574 * pollib + 0.0220 * parties + error. With this process we went from a R squared value of 0.565 to 0.502, but reduced the formula from eight factors to three.
+```{r include=FALSE}
+summary(glm(miltcoup~oligarchy+pollib+parties+pctvote+popn+size+numelec+numregim, family=poisson,data=africa_data))
+summary(glm(miltcoup~oligarchy+pollib+parties+pctvote+popn+size+numregim, family=poisson,data=africa_data))
+summary(glm(miltcoup~oligarchy+pollib+parties+pctvote+popn+size, family=poisson,data=africa_data))
+summary(glm(miltcoup~oligarchy+pollib+parties+pctvote+popn, family=poisson,data=africa_data))
+summary(glm(miltcoup~oligarchy+pollib+parties+pctvote, family=poisson,data=africa_data))
+summary(glm(miltcoup~oligarchy+pollib+parties, family=poisson,data=africa_data))
+```
+```{r}
+options(digits = 3)
+africaglm2=glm(miltcoup~oligarchy+pollib+parties, family=poisson,data=africa_data)
+with(summary(africaglm2), 1 - deviance/null.deviance)
+summary(africaglm2)
+
+```
+And then we verify the assumption of Possion regression. The response residuals clearly increase with the (logarithm) of the fitted values, as expected under a Poisson model.
+```{r}
+par(mfrow=c(2,2));
+plot(log(fitted(africaglm2)),residuals(africaglm2))
+plot(log(fitted(africaglm2)),residuals(africaglm2))
+plot(log(fitted(africaglm2)),residuals(africaglm2, type="response"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

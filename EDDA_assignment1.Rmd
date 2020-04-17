@@ -1,0 +1,371 @@
+---
+title: "Assignment 1"
+author: " Group6: Futong Han,Qinghe Gao,Xinyu Fu"
+output: pdf_document
+highlight: tango
+---
+
+## Exercise 1
+
+**a)** 
+This question is mainly about the two sample t-test and to determine how the sample number and standard deviation influce the power of t-test. Power function is the probability that the t-test rejects the null hypothesis in the given parameters.So the first quenstion:n=m=30;mu=180;sd=5,` nu=seq(175,185,by=0.25)` The $H_0$ is:mu=nu. 
+```{r function}
+options(digits = 3)
+p.value=function(n,m,mu,nu,sd,B=1000){
+  p=numeric(B) # p will be an array of realized p-values
+  for (b in 1:B) {x=rnorm(n,mu,sd); y=rnorm(m,nu,sd)
+                p[b]=t.test(x,y,var.equal=TRUE)[[3]]}
+ return(p)}
+```
+```{r}
+n=m=30;mu=180;sd=5
+nulist=seq(175,185,by=0.25);plist=numeric(length(nulist))
+d=1
+for (i in nulist) { h=p.value(n,m,mu,i,sd); k=mean(h<0.05);plist[d]=k; d=d+1
+}
+
+```
+
+**b)** 
+The we increase the number of sample:n=m=100.The plot shows later
+```{r}
+n=m=100;mu=180;sd=5
+nulist_1=seq(175,185,by=0.25);plist_1=numeric(length(nulist_1))
+d=1
+for (i in nulist_1) { h=p.value(n,m,mu,i,sd); k=mean(h<0.05);plist_1[d]=k; d=d+1
+}
+```
+
+**c)** 
+Finally we increase the standrad deviation.The plot shows later
+```{r}
+n=m=30;mu=180;sd=15
+nulist_2=seq(175,185,by=0.25);plist_2=numeric(length(nulist))
+d=1
+for (i in nulist_2) { h=p.value(n,m,mu,i,sd); k=mean(h<0.05);plist_2[d]=k; d=d+1
+}
+```
+
+**d)**
+Then we put the three plots toghther:
+```{r}
+plot(nulist,plist,xlab='Nu',ylab = 'Power',col="red")
+lines(nulist,plist,col="red",lty=3)
+points(nulist_1,plist_1,col="blue")
+lines(nulist_1,plist_1,col="blue",lty=3)
+points(nulist_2,plist_2,col="green")
+lines(nulist_2,plist_2,col="green",lty=3)
+abline(h=0.05,col='black',lty=2)
+legend("top",legend=c("question-a","question-b","question-c",'0.05'),pch=c(1,1,1,NA),pt.cex=0.6,col=c("red","blue","green",'black'),lty=3)  
+```
+Since this is two sample t-test. And the equation:
+\begin{align}
+    T=\frac{\bar{x}_{n}-\bar{y}_{m}}{S_{x,y}\sqrt{\frac{1}{n}+\frac{1}{m}}}
+\end{align}
+
+When compared the result of question a and b sample number has been increased in b. It is clear to see that the plot of b is more sharp and narrow than plot a. Because large sample number increase the significant level of t-test, which decreases the extreme situation. And large sample let the power value become more accurate.
+
+When compared the result of question a and c, standard deviation in c has been increased 15. Larger standard deviation increase the scale of the tail of distribution. Besides larger standard deviation increase the posibility sample the number which are far way from the mean value, which let the even when nu<176 or nu>184 the power value is comparatively larger than a.
+
+Thus, in order to get the accurate the value large sample number and small standrad deviation are necessary.
+
+## Exercise 2
+
+**a)** 
+Below is the histogram and the QQ-plot of three datasets. Light1897 and Light 1882 are normality distribution, but Light is not. 
+```{r}
+light1879 = scan("light1879.txt")
+light1882 = scan("light1882.txt")
+light = scan("light.txt");
+light_new = scan("light_new.txt")
+
+light_real = 7.442/(((light/1000)+24.8)/1000000)-299000
+light_new_real = 7.442/(((light_new/1000)+24.8)/1000000)-299000
+par(mfrow=c(3,2))
+hist(light1879);
+qqnorm(light1879);
+hist(light1882);
+qqnorm(light1882);
+hist(light_real);
+qqnorm(light_real);
+```
+Then we try to find out why Light is different with the other datasets. There are two data in 'Light.txt' that are below zero which makes the Q-Q plot different. Then we delete these two special data and got new plot below. This plot is nomality distribution now.
+```{r}
+par(mfrow=c(1,2))
+hist(light_new_real);qqnorm(light_new_real)
+```
+
+**b)** 
+First we define two fuctions to get bootstrap program and the method we get confidence intervals.
+```{r}
+bootstrap <- function(data){
+  B = 1000
+  Tstar = numeric(B);
+  for(i in (1:B)){
+    Xstar = sample(data,replace = TRUE)
+      Tstar[i]=mean(Xstar)
+    }
+  return(Tstar);
+  }
+
+confidence_interval <- function(data){
+  x = mean(data);
+  Tstar = bootstrap(data)
+  Tstar_1 = quantile(Tstar,0.025)
+  Tstar_2 = quantile(Tstar,0.975)
+  return(c(2*x-Tstar_2,2*x-Tstar_1))
+  }    
+
+```
+Then we input three datasets and get the confidence intervals of them.
+```{r}
+options(digits=7)
+confidence_mean_1879 = confidence_interval(light1879)+299000
+confidence_mean_1882 = confidence_interval(light1882)+299000
+confidence_mean_light = confidence_interval(light_real)+299000
+print(confidence_mean_1879);print(confidence_mean_1882);print(confidence_mean_light)
+```
+The confidence interval of "light1879" is higher than the other two methods. And the confidence interval of "light1882" and "light newcombs measurements" are similar, which we can draw the conclusion that "light1879" is a different way to measure the spped of light.
+
+**c)** 
+After searched on Google we find that the current speed of light is 299792.5 km/second. And we can see that this value falls on the intervals of 'light1882'.
+
+## Exercise 3
+
+**a)**
+The original 200 telecom bills is shown on the left figure. Given that the two-side tails of are taller than center histograms. 
+
+We have follwoing suggestions: 
+1. Explore more on the reason why many bills are 0 euros. 
+2. Pricing strategy shall focus on subscribers having more then 80 euros.
+
+A possible inconsistances in the data is that, there are bills 0 euros, so we decide to drop the bills 0 euros to plot the right figure.
+
+```{r a}
+options(digits=3)
+data = read.table("telephone.txt",header=TRUE)
+data_drop0 = data[data$Bills!=0,]
+par(mfrow=c(1,2));hist(data$Bills,breaks = 20);hist(data_drop0,breaks = 20)
+```
+
+**b)**
+In question b, with dicreted $\lambda \in [0.01,0.1]$ with 0.01 as interval, we fristly hypothesis $H_0$: $X_i$~$exp(\lambda)$ for i.i.d $i=1,2,3...N$ for each $\lambda$. 
+
+The test statistics used in this case is median, namely $T = T_{median}(X_1,...X_N)$ 
+
+Next, for each $H_0$, we used bootstrap to generalize $T_i^* = x_1^*,...x_N^*$ samples with $B=1000$ time. 
+
+We finally compare the $T$ and $T*$ to determine the p value with 95% confidence as threshold.
+
+As shown in the figure below, for any $\lambda$ in between 0.2 and 0.3 roughly, $H_0$: $X_i$~$exp(\lambda)$ will be not be rejected with $p>0.05$
+```{r}
+#b
+data_median = median(data_drop0)
+data_mean = mean(data_drop0)
+lambdas = seq(0.01,0.1,0.001)
+p_stems = numeric(length(lambdas))
+
+B=1000 #repeat B times
+tstar=numeric(B)
+
+n=length(data_drop0)
+
+for (lam_ind in 1:length(lambdas)){
+  for (i in 1:B){
+    xstar=rexp(n,rate=lambdas[lam_ind])#lambda)
+    tstar[i]=median(xstar)
+  }
+  p1=sum(tstar>data_median)/B;p2=sum(tstar<data_median)/B;p=2*min(p1,p2)
+  p_stems[lam_ind] = p
+}
+
+plot(lambdas,p_stems,main = "P values derived from bootstrap",ylab = "P values",xlab="Lambda")
+par(new=TRUE)
+abline(h=0.05,col="red")
+```
+
+**c)**
+To construct a 95% bootstrap interval,we run a bootstrap and with $T$ being median to find the population median $21.17 <T_{median}<41.38$
+```{r}
+n_clt = 10000
+data_size = length(data_drop0)
+Tstar=numeric(n_clt)
+for(i in 1:n_clt) 
+{ 
+  Xstar=sample(data_drop0,replace=TRUE,size=data_size) 
+  Tstar[i]=median(Xstar) 
+} 
+print("Constructed 95% confidence interval:")
+quantile(Tstar,0.025);quantile(Tstar,0.975)
+
+```
+
+**d)**
+Assuming $X_i$~$exp(\lambda)$ for i.i.d $i=1,2,3...N$, We sampled $X_i^*$ for $i=1,2,3...N$ with $B=10000$ repeats. 
+
+According to central limit theorem with $\pm 1.96 \sigma$ for the 95% confidence interval of standard normal distribution with $\mu$ and $\sigma$ being mean and std. We obtain $$Pr(-1.96 \le \frac{\bar{X}-\mu}{\sigma/\sqrt{n}}\le 1.96)$$ where $n=N\times B$.
+
+We can estimate the $\lambda=1/bar{X}=0.022$ with large sample size $n$.
+
+Given the mean $\mu = 1/\lambda$ and median$ \eta= \ln(2)/\lambda$ for any exponential distribution, we can have $\eta = \ln(2) \mu$. By calculations, we eventually obtain $31.064 \le \eta \ge 44.723$ as 95% confidence interval.
+
+We found the latter confidence interval is #TODO
+```{r}
+options(digits=3)
+n_clt = 10000
+Tstar=numeric(n_clt)
+for(i in 1:n_clt) 
+{ 
+  Xstar=sample(data_drop0,replace=TRUE,size = data_size) 
+  Tstar[i]=mean(Xstar) 
+} 
+est_lam = 1/mean(Tstar)
+cat("\n Estimated lambda:",est_lam)
+
+left_margin = log(2)*(1.96*sd(Tstar)/sqrt(n_clt*data_size)+mean(Tstar))
+right_margin = mean(Tstar)-log(2)*(1.96*sd(Tstar)/sqrt(n_clt*data_size))
+cat("\n Left margin of population median",left_margin)
+cat("\n Right margin of population median",right_margin)
+```
+
+**f)**
+```{r}
+library(BSDA)
+SIGN.test(data_drop0,md=40,alternative = "less")
+SIGN.test(data_drop0,md=40,alternative = "greater")
+```
+```{r}
+n_clt = 10000
+bill_fracs = numeric(n_clt)
+
+for(i in 1:n_clt) 
+{ 
+  Xstar=sample(data_drop0,replace=TRUE,size = data_size) 
+  count_less10 = 0
+  for (bill in Xstar)
+  {
+    if (bill<=10) {
+      count_less10 = count_less10 +1 
+    }
+  }
+  bill_fracs[i]=count_less10/data_size
+} 
+SIGN.test(data_drop0,md=0.25,alternative = "less")
+```
+
+## Exercise 4
+
+First, we read the data from "run.txt"
+```{r setup, include=FALSE}
+options(digits=3)
+run = read.table("run.txt",header = TRUE)
+attach(run)
+```
+
+**a)**
+In order to find whether the run times before and after drinks are correlated, we use Q-Q plot to compare all the data and we find that two running times are linear correlated. Then we use running time after minus running time before and they are also linear correlated. Then we can draw the conclusion that two running times are correlated
+```{r cars}
+par(mfrow=c(2,2))
+hist(before);qqnorm(before);qqline(before);
+hist(after);qqnorm(after);qqline(after);
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(before,after,main = "before and after")
+abline(lm(formula = after ~ before), col = "red")
+qqnorm(after-before)
+```
+
+**b)**
+We defined the different times for drinking soft drinks and energy drinks. Then we test the data using paired t-test.
+```{r}
+lemo = run[which (drink=="lemo"),]
+energy = run[which (drink=="energy"),]
+t.test(lemo$before,lemo$after,paired=TRUE);t.test(energy$before,energy$after,paired=TRUE);
+```
+for p-value=0.437 and p-value=0.126, we can not reject that the mean of the differences is zero, which means we can conclude neither the soft drinks nor the energy drinks affect the runners.
+
+**c)**
+We test if the time differences are influnced by type of drinks.
+```{r}
+lemo_time = lemo$before - lemo$after
+energy_time = energy$before - energy$after
+t.test(lemo_time,energy_time,digits=2)
+```
+For p-value=0.159 means that we can draw the conclusion that we can not reject that the mean of the differences is zero. Furthermore, we can not say that the time difference is influenced by the type of drink.
+
+**d)**
+A possible objection for b could be that the time interval between two running tasks is not long enough. Also, after pupils drinking the energy drinks, they need some time to kick in. So there should be more time.
+
+Also, there are same problems with c. There should be enough time between two running tasks.
+
+## Exercise 5
+
+**a)**
+This is the result of question 5a
+```{r}
+meatmeal=chickwts[chickwts$feed=='meatmeal',]
+sunflower=chickwts[chickwts$feed=='sunflower',]
+par(mfrow=c(2,2))
+t.test(meatmeal$weight,sunflower$weight)
+wilcox.test(meatmeal$weight,sunflower$weight)
+ks.test(meatmeal$weight,sunflower$weight)
+```
+Category|t-test|Mann-Whitney test|Kolmogorov-Smirnov test
+------ | -------------------- | ----------------------- | ----------------------- 
+p-value|0.04|0.07|0.1
+Two sample t-test assumed that the both two samples were obtained from the normal population and to test whether the mean of two sample are the same. Since the p-value is 0.04, the $H_0$ is not accepted.
+
+Mann-Whitney test focused on whether the population of two samples are the same and it was based on ranks. We can see the p-value is 0.07, which means $H_0$ of equal medians is not rejected. The underlying distribution of meatmeal and sunflower are the same.
+
+Kolmogorov-Smirnov test also focused on whether the population of two samples are the same. But it is based on the differences in the histograms. And the p-value 0.1, which we can accept that the weight of meatmeal and sunflower have the same distribution.
+
+
+**b)**
+```{r}
+weightavno_1=lm(weight~feed,data = chickwts)
+anova(weightavno_1)
+summary(lm(weight~feed,data = chickwts))
+```
+So P=$5.9*10^{-10}$, it is clear to see that the $H_0$ can be rejected. So the feed does have different on chick weight.
+
+Besides, the estimated weight for feed6 casein is 259.13. And for horsebean the estimated weight is 323.583-163.383=160.20. For linseed the estimated weight is 323.58-104.83 =218.75. For meatmeal is 323.58-46.67=276.91.For soybean is 323.58-77.15 =246.43. For sunflower is 323.58+5.33 =328.92
+
+Category|casein|horsebean|linseed|meatmeal|soybean|sunflower
+------ | -------------------- | -----------------------  | ----------------------- | ----------------------- | ----------------------- | ----------------------- 
+Estimated weight|323.58|160.20 |218.75|276.91|246.43|328.92 
+Thus, as for the estimated weight the sunflower is the best feed.
+
+**c)**
+
+```{r}
+meatmeal=chickwts[chickwts$feed=='meatmeal',]
+sunflower=chickwts[chickwts$feed=='sunflower',]
+horsebean=chickwts[chickwts$feed=='horsebean',]
+linseed=chickwts[chickwts$feed=='linseed',]
+soybean=chickwts[chickwts$feed=='soybean',]
+casein=chickwts[chickwts$feed=='casein',]
+shapiro.test(meatmeal$weight);shapiro.test(sunflower$weight);shapiro.test(horsebean$weight);
+shapiro.test(linseed$weight);shapiro.test(soybean$weight);shapiro.test(casein$weight)
+par(mfrow=c(1,2)); plot(weightavno_1, 1);qqnorm(residuals(weightavno_1));qqline(residuals(weightavno_1))
+
+library(car)
+leveneTest(weight~feed,data=chickwts)
+```
+The first assumption:we need to test of the normality of sample. Since it is really hard to determine the normality by qqlot when the sample number is samll. Thus we use sharipo to test the normality. It is clear to see that all the samples from different feed are normal distribution. 
+
+The second assumption: we need to check out the whether the variance of different sample are homogeneous. We used residuals vs fitted plot and it is clear to see that the there is no relationship between residuals and fitted values, which means we can assume that the variancethe variance of different sample are homogeneous. In order to get the accurate the results whether the variance are homogeneous we used leveneTest to test the variance. It turned out the p-value of leveneTest is 0.59. Then we can certainly get the conclusion that the variance between the samples are the same.
+
+Then we need to determine the normality of residuals. As the qqplot showed we can get the conclusion that the residuals was the normal distribution
+
+Then we can get the conclusion all the assumption of the Anova are stastified.
+
+**d)**
+```{r}
+attach(chickwts); kruskal.test(weight,feed)
+```
+The difference from the question b is:
+
+When the ANOVA assumptions are not met, Kruskal-Wallis can be used to test whether the samples were from the same population and it is based on the rank. And Kruskal-Wallis actually is a nonparametric alternative to one-way ANOVA. And in this case the p-value is $5*10^{-7}$, which the $H_0$ is rejected and the samples were not from the same population. And the conclusion of b is the sample's mean were not the same.
+
